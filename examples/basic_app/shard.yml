@@ -1,0 +1,14 @@
+name: basic_app
+version: 0.1.0
+authors:
+  - Ian Rash <redcodefinal@gmail.com>
+
+crystal: ">= 1.20.0"
+
+dependencies:
+  carbon:
+    path: ../../
+
+targets:
+  basic_app:
+    main: src/app.cr

@@ -1,0 +1,18 @@
+name: carbon
+version: 0.1.1
+authors:
+  - Ian Rash <redcodefinal@gmail.com>
+
+description: |
+  Lapis-style automated versioning system and Crystal DSL for Git repositories.
+  Automatically increments major.minor.commit_number with each commit.
+
+license: MIT
+crystal: ">= 1.20.0"
+
+targets:
+  carbon:
+    main: src/carbon/cli.cr
+
+development_dependencies:
+  # Zero external dependencies for core functionality

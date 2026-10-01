@@ -1,0 +1,10 @@
+/bin/
+/lib/
+/.shards/
+*.dwarf
+*.pdb
+*.o
+*.obj
+shard.lock
+.DS_Store
+Thumbs.db

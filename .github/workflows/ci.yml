@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    name: Test & Build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest ]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Crystal
+        uses: crystal-lang/install-crystal@v1
+        with:
+          crystal: latest
+
+      - name: Check Formatting
+        run: crystal tool format --check
+
+      - name: Run Test Specifications
+        run: crystal spec --error-trace
+
+      - name: Build Carbon Binary
+        run: shards build carbon
+
+      - name: End-to-End Scaffolding & Git Hook Smoke Test
+        run: |
+          mkdir -p tmp_smoke && cd tmp_smoke
+          git init -b main
+          git config user.name "CI Runner"
+          git config user.email "ci@example.com"
+          echo 'name: smoke_app\nversion: 0.1.0' > shard.yml
+          ../bin/carbon init
+          ../bin/carbon bump --hook
+          grep "version: 0.1.1" shard.yml
+          git add shard.yml
+          git commit -m "initial commit"
+          # Verify pre-commit hook runs on subsequent commit
+          echo "test change" >> README.md
+          git add README.md
+          git commit -m "second commit"
+          grep "version: 0.1.2" shard.yml
+          cd .. && rm -rf tmp_smoke
