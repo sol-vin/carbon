@@ -7,13 +7,14 @@ end
 describe Carbon do
   describe ".version! macro" do
     it "injects VERSION and numeric constants into the calling module" do
-      SampleApp::VERSION.should eq("0.1.0")
-      SampleApp::MAJOR_VERSION.should eq(0)
-      SampleApp::MINOR_VERSION.should eq(1)
-      SampleApp::COMMIT_VERSION.should eq(0)
+      expected = Carbon::FileManager.read_shard_version("shard.yml").not_nil!
+      SampleApp::VERSION.should eq(expected.to_s)
+      SampleApp::MAJOR_VERSION.should eq(expected.major)
+      SampleApp::MINOR_VERSION.should eq(expected.minor)
+      SampleApp::COMMIT_VERSION.should eq(expected.commit)
 
-      SampleApp.version.should eq("0.1.0")
-      SampleApp.carbon_version.should eq(Carbon::Version.new(0, 1, 0))
+      SampleApp.version.should eq(expected.to_s)
+      SampleApp.carbon_version.should eq(expected)
     end
   end
 
