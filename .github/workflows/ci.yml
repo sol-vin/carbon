@@ -35,7 +35,9 @@ jobs:
         run: crystal spec --error-trace
 
       - name: Build Carbon Binary
-        run: shards build carbon
+        run: |
+          shards build carbon
+          echo "$GITHUB_WORKSPACE/bin" >> $GITHUB_PATH
 
       - name: End-to-End Scaffolding, Git Hook & Changelog Smoke Test
         run: |
@@ -43,9 +45,9 @@ jobs:
           git init -b main
           git config user.name "CI Runner"
           git config user.email "ci@example.com"
-          echo -e 'name: smoke_app\nversion: 0.1.0' > shard.yml
-          ../bin/carbon init
-          ../bin/carbon bump --hook
+          printf "name: smoke_app\nversion: 0.1.0\n" > shard.yml
+          carbon init
+          carbon bump --hook
           grep "version: 0.1.1" shard.yml
           git add shard.yml
           git commit -m "feat(core): initial commit for smoke test"
@@ -55,10 +57,10 @@ jobs:
           git commit -m "fix(readme): update documentation"
           grep "version: 0.1.2" shard.yml
           # Test changelog generation
-          ../bin/carbon changelog
+          carbon changelog
           test -f changelog.yml
           test -f CHANGELOG.md
           grep "initial commit for smoke test" CHANGELOG.md
           # Test doctor
-          ../bin/carbon doctor
+          carbon doctor
           cd .. && rm -rf tmp_smoke
