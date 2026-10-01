@@ -1,0 +1,52 @@
+---
+settings:
+  title: CARBON CHANGELOG
+  output_file: CHANGELOG.md
+  categories:
+    breaking:
+      title: "\U0001F4A5 Breaking Changes"
+      bullet: ▲
+    features:
+      title: ✨ Features & Improvements
+      bullet: ✦
+    fixes:
+      title: "\U0001F41B Bug Fixes"
+      bullet: ✓
+    perf:
+      title: ⚡ Performance Optimizations
+      bullet: "\U0001F680"
+    docs:
+      title: "\U0001F4DA Documentation"
+      bullet: "\U0001F4D6"
+    maintenance:
+      title: "\U0001F6E0️ Chores & Tooling"
+      bullet: •
+releases:
+- version: 0.1.3
+  date: "2026-10-01"
+  status: active
+  entries:
+  - type: feat
+    description: initial commit for carbon version control shard
+    bullet: ✦
+    hash: 55eff71
+    author: Ian Rash
+  - type: test
+    description: dynamically assert macro version against shard.yml
+    bullet: •
+    hash: 1e4bc97
+    author: Ian Rash
+- version: 0.1.2
+  date: "2026-10-01"
+  status: released
+  entries:
+  - type: feat
+    description: 'Initial release of Carbon: Lapis-style auto-versioning'
+    bullet: "\U0001F680"
+    hash: 55eff71
+    author: Ian Rash
+  - type: test
+    description: dynamically assert macro version against shard.yml
+    bullet: •
+    hash: 1e4bc97
+    author: Ian Rash

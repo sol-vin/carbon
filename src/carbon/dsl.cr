@@ -2,6 +2,7 @@ require "./version"
 require "./vcs/git"
 require "./file_manager"
 require "./hook_manager"
+require "./changelog/manager"
 
 module Carbon
   enum BumpType
@@ -23,7 +24,7 @@ module Carbon
     end
   end
 
-  # Synchronizes shard.yml's commit number with the exact current Git commit count
+  # Synchronizes all target files with the exact current Git commit count
   def self.sync!(repo_root : Path | String = ".", stage : Bool = false) : Version
     root = Path.new(repo_root)
     git = VCS::Git.new(root)
@@ -31,17 +32,23 @@ module Carbon
     actual_commits = git.commit_count
 
     synced = curr.bump_commit(actual_commits)
-    FileManager.update_shard_version(root.join("shard.yml"), synced)
+    updated_files = FileManager.sync_all_targets(synced, root)
 
-    if stage && git.initialized?
-      git.stage(["shard.yml"])
+    # Sync changelog if present
+    if File.exists?(Changelog::Manager.yaml_path(root))
+      Changelog::Manager.sync(root, version_override: synced.to_s)
+      updated_files << Changelog::Manager.yaml_path(root)
+      updated_files << root.join("CHANGELOG.md")
+    end
+
+    if stage && git.initialized? && !updated_files.empty?
+      git.stage(updated_files.map(&.to_s))
     end
 
     synced
   end
 
-  # Bumps the version.
-  # For :commit (e.g. pre-commit hook), next_commit is calculated as current commit_count + 1
+  # Bumps the version and updates all target files
   def self.bump!(
     type : BumpType = BumpType::Commit,
     repo_root : Path | String = ".",
@@ -61,16 +68,23 @@ module Carbon
                     curr.bump_major
                   end
 
-    FileManager.update_shard_version(root.join("shard.yml"), new_version)
+    updated_files = FileManager.sync_all_targets(new_version, root)
 
-    if stage && git.initialized?
-      git.stage(["shard.yml"])
+    # Sync changelog if present
+    if File.exists?(Changelog::Manager.yaml_path(root))
+      Changelog::Manager.sync(root, version_override: new_version.to_s)
+      updated_files << Changelog::Manager.yaml_path(root)
+      updated_files << root.join("CHANGELOG.md")
+    end
+
+    if stage && git.initialized? && !updated_files.empty?
+      git.stage(updated_files.map(&.to_s))
     end
 
     new_version
   end
 
-  # Sets major and minor version numbers explicitly while keeping commit count in sync with Git
+  # Sets major and minor version numbers explicitly across all targets
   def self.set(
     major : Int32,
     minor : Int32,
@@ -84,10 +98,17 @@ module Carbon
     commits = git.initialized? ? git.commit_count : curr.commit
     new_version = Version.new(major, minor, commits, curr.prerelease, curr.build_metadata)
 
-    FileManager.update_shard_version(root.join("shard.yml"), new_version)
+    updated_files = FileManager.sync_all_targets(new_version, root)
 
-    if stage && git.initialized?
-      git.stage(["shard.yml"])
+    # Sync changelog if present
+    if File.exists?(Changelog::Manager.yaml_path(root))
+      Changelog::Manager.sync(root, version_override: new_version.to_s)
+      updated_files << Changelog::Manager.yaml_path(root)
+      updated_files << root.join("CHANGELOG.md")
+    end
+
+    if stage && git.initialized? && !updated_files.empty?
+      git.stage(updated_files.map(&.to_s))
     end
 
     new_version

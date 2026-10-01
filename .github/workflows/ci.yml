@@ -20,6 +20,9 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Update apt package index
+        run: sudo apt-get update
+
       - name: Install Crystal
         uses: crystal-lang/install-crystal@v1
         with:
@@ -34,21 +37,28 @@ jobs:
       - name: Build Carbon Binary
         run: shards build carbon
 
-      - name: End-to-End Scaffolding & Git Hook Smoke Test
+      - name: End-to-End Scaffolding, Git Hook & Changelog Smoke Test
         run: |
           mkdir -p tmp_smoke && cd tmp_smoke
           git init -b main
           git config user.name "CI Runner"
           git config user.email "ci@example.com"
-          echo 'name: smoke_app\nversion: 0.1.0' > shard.yml
+          echo -e 'name: smoke_app\nversion: 0.1.0' > shard.yml
           ../bin/carbon init
           ../bin/carbon bump --hook
           grep "version: 0.1.1" shard.yml
           git add shard.yml
-          git commit -m "initial commit"
+          git commit -m "feat(core): initial commit for smoke test"
           # Verify pre-commit hook runs on subsequent commit
           echo "test change" >> README.md
           git add README.md
-          git commit -m "second commit"
+          git commit -m "fix(readme): update documentation"
           grep "version: 0.1.2" shard.yml
+          # Test changelog generation
+          ../bin/carbon changelog
+          test -f changelog.yml
+          test -f CHANGELOG.md
+          grep "initial commit for smoke test" CHANGELOG.md
+          # Test doctor
+          ../bin/carbon doctor
           cd .. && rm -rf tmp_smoke
