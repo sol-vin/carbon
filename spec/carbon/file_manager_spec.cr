@@ -39,7 +39,7 @@ describe Carbon::FileManager do
       content = <<-YAML
       # Project manifest
       name: sample_app
-      version: "0.1.10" # Lapis version
+      version: "0.1.10" # Auto-managed version
       crystal: ">= 1.20.0"
       YAML
       File.write(shard_file, content)
@@ -48,7 +48,7 @@ describe Carbon::FileManager do
       res.should be_true
 
       updated = File.read(shard_file)
-      updated.includes?(%(version: "0.1.11" # Lapis version)).should be_true
+      updated.includes?(%(version: "0.1.11" # Auto-managed version)).should be_true
       updated.includes?("# Project manifest").should be_true
       updated.includes?(%(name: sample_app)).should be_true
     end

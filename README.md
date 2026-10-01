@@ -4,16 +4,48 @@
 [![Crystal](https://img.shields.io/badge/crystal-%3E%3D1.20.0-black.svg)](https://crystal-lang.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-> **Lapis-style automated version control, human-friendly YAML changelogs, and Crystal DSL for modern apps and shards.**
+> **Automated commit-based version control, human-friendly YAML changelogs, and Crystal DSL for modern apps and shards.**
 
-Carbon eliminates manual version bumping, release friction, and commit desyncs by combining:
-1. **Lapis-Style Auto-Versioning**: Commits monotonically advance `commit_number` ($\langle major \rangle.\langle minor \rangle.\langle commit\_number \rangle$) while leaving `major.minor` under developer control.
-2. **YAML-Driven Changelogs (`changelog.yml` $\to$ `CHANGELOG.md`)**: Human-editable YAML source of truth that compiles into structured Markdown. **Never overwrites existing entries**, preserving all your hand-written descriptions, typo fixes, custom notes, and bullet choices permanently.
-3. **Multi-Target File Synchronization**: Automatically updates `shard.yml`, `src/**/version.cr`, and C/C++ version headers simultaneously, ending the version drift seen across multi-component projects.
-4. **Git Tag & Release Manager**: Seals changelog entries, tags annotated Git releases (`vX.Y.Z`), updates floating `latest` tags, and pushes with zero friction.
-5. **Compile-Time Macro DSL**: Injects version and Git metadata into your classes with zero runtime overhead via `Carbon.version!`.
-6. **Repository Doctor (`carbon doctor`)**: Audits Git health, hook integrity, and version consistency across all files, offering `--fix` to repair issues automatically.
-7. **Self-Versioning**: Carbon automatically version-controls and changelogs itself on every commit.
+Carbon eliminates manual version bumping, release friction, and commit desyncs through a clean, automated Git workflow:
+
+$$\textbf{Version Format:} \quad \mathbf{\langle major \rangle.\langle minor \rangle.\langle commit\_number \rangle}$$
+
+- **`commit_number`**: Automatically advances with every Git commit, ensuring every build and commit is distinctly and monotonically identified.
+- **`major.minor`**: Left entirely under developer control to bump when cutting feature milestones or breaking changes.
+- **Zero-Friction Git Hooks**: Automatically stages updated manifests during `pre-commit` so that each commit carries its exact chronological build number in its own Git tree.
+- **YAML-Driven Changelogs (`changelog.yml` $\to$ `CHANGELOG.md`)**: Human-editable YAML source of truth that compiles into structured Markdown. **Never overwrites existing entries**, preserving all your hand-written descriptions, typo fixes, custom notes, and bullet choices permanently.
+- **Multi-Target File Synchronization**: Automatically updates `shard.yml`, `src/**/version.cr`, and C/C++ version headers simultaneously, ending version drift across multi-component projects.
+- **Git Tag & Release Manager**: Seals changelog entries, tags annotated Git releases (`vX.Y.Z`), updates floating `latest` tags, and pushes with zero friction.
+- **Compile-Time Macro DSL**: Injects version and Git metadata into your classes with zero runtime overhead via `Carbon.version!`.
+- **Repository Doctor (`carbon doctor`)**: Audits Git health, hook integrity, and version consistency across all files, offering `--fix` to repair issues automatically.
+- **Self-Versioning**: Carbon automatically version-controls and changelogs itself on every commit.
+
+---
+
+## How Carbon Version Control Works
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Dev as Developer
+    participant Git as Git (pre-commit hook)
+    participant CLI as Carbon CLI (bump --hook)
+    participant Manifest as shard.yml & target files
+    participant History as Git History (HEAD)
+
+    Dev->>Git: git commit -m "..."
+    Git->>CLI: Invokes pre-commit hook
+    CLI->>History: Queries git rev-list --count HEAD (+1 upcoming)
+    CLI->>Manifest: Updates version to <major>.<minor>.<next_commit>
+    CLI->>Git: git add shard.yml (stages updated manifests)
+    Git->>History: Finalizes commit containing the bumped version
+    Git-->>Dev: Commit landed with version matched to history!
+```
+
+### Why `pre-commit` Instead of `post-commit`?
+Most version bouncers run on `post-commit`, which requires generating an unwanted secondary "bump version" commit or running `git commit --amend`, causing messy Git graphs and detached heads.
+
+Carbon's `pre-commit` architecture computes the exact upcoming commit index ($N+1$), writes it to `shard.yml` (and any configured `version.cr` or C headers), and stages them. When Git seals the commit, the commit's tree **already contains the exact version matching that commit**.
 
 ---
 
@@ -89,7 +121,7 @@ settings:
     \____/_/ \_|_| \_\____/ \___/|_| \_|
   header: |
     All notable changes to this project are documented in this file.
-    Maintained automatically by Carbon (Lapis-style versioning).
+    Maintained automatically by Carbon.
 
   # Category definitions, custom titles, and default bullets
   categories:
@@ -127,7 +159,7 @@ releases:
   - version: "0.1.1"
     date: "2026-10-01"
     status: released
-    summary: "Initial public release of Carbon version control shard with Lapis-style auto-versioning."
+    summary: "Initial public release of Carbon version control shard."
     entries:
       - type: feat
         description: "initial commit for carbon version control shard"
@@ -178,7 +210,7 @@ carbon set 2.0
 
 ## Tagging & Release Management
 
-Inspired by the release hygiene of `lapis`, Carbon provides a single command to tag and seal releases:
+Carbon provides a single command to tag and seal releases:
 
 ```bash
 carbon tag v1.0.0 --message="Initial stable release" --push
@@ -214,6 +246,37 @@ To automatically repair detected issues:
 ```bash
 carbon doctor --fix
 ```
+
+---
+
+## Non-Destructive Git Hook Chaining
+
+If your project already uses a pre-commit hook (for linters, formatting, or tests), Carbon will never overwrite it. It encapsulates its commands within explicit managed markers:
+
+```sh
+#!/bin/sh
+# Existing user linters:
+crystal tool format --check
+
+# >>> CARBON AUTO-VERSION HOOK >>>
+# Generated by Carbon. Do not edit this block manually.
+if [ -f "bin/carbon" ]; then
+  ./bin/carbon bump --hook
+elif [ -f "bin/carbon.exe" ]; then
+  ./bin/carbon.exe bump --hook
+elif command -v carbon >/dev/null 2>&1; then
+  carbon bump --hook
+elif command -v crystal >/dev/null 2>&1; then
+  if [ -f "src/carbon/cli.cr" ]; then
+    crystal run src/carbon/cli.cr -- bump --hook
+  elif [ -f "lib/carbon/src/carbon/cli.cr" ]; then
+    crystal run lib/carbon/src/carbon/cli.cr -- bump --hook
+  fi
+fi
+# <<< CARBON AUTO-VERSION HOOK <<<
+```
+
+Running `carbon hook uninstall` safely strips only Carbon's block and restores your original hook.
 
 ---
 

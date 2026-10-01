@@ -109,7 +109,7 @@ module Carbon
       end
 
       puts "\e[32m✓\e[0m \e[1mCarbon initialization complete!\e[0m"
-      puts "  Commits will now automatically bump the version in 'shard.yml' (lapis-style)."
+      puts "  Commits will now automatically bump the version in 'shard.yml'."
     end
 
     private def cmd_bump(args : Array(String))
@@ -368,7 +368,7 @@ module Carbon
 
     private def print_help
       puts <<-HELP
-      \e[1mCarbon\e[0m - Version Control & Lapis-Style Auto-Versioning for Crystal Apps
+      \e[1mCarbon\e[0m - Automated Version Control & Changelog System for Crystal Apps
 
       \e[1mUSAGE:\e[0m
         carbon <command> [options]

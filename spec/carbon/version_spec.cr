@@ -2,7 +2,7 @@ require "../spec_helper"
 
 describe Carbon::Version do
   describe ".parse" do
-    it "parses standard lapis-style major.minor.commit strings" do
+    it "parses standard major.minor.commit strings" do
       v = Carbon::Version.parse("0.1.42")
       v.major.should eq(0)
       v.minor.should eq(1)

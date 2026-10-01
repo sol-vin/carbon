@@ -1,7 +1,7 @@
 require "carbon"
 
 module BasicApp
-  # Embeds Lapis-style version from shard.yml at compile time!
+  # Embeds version from shard.yml at compile time!
   Carbon.version!
 
   def self.run

@@ -8,6 +8,6 @@ require "./carbon/doctor"
 require "./carbon/dsl"
 
 module Carbon
-  # Carbon's own embedded version (Lapis-style)
+  # Carbon's own embedded version
   Carbon.version!
 end

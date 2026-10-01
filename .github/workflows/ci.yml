@@ -61,6 +61,8 @@ jobs:
           test -f changelog.yml
           test -f CHANGELOG.md
           grep "initial commit for smoke test" CHANGELOG.md
-          # Test doctor
+          git add .
+          git commit -m "docs(changelog): record initial smoke commits"
+          # Test doctor on clean repo
           carbon doctor
           cd .. && rm -rf tmp_smoke

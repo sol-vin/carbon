@@ -15,7 +15,7 @@ describe "Carbon CLI" do
     stdout = IO::Memory.new
     status = Process.run(bin_path, ["--help"], output: stdout)
     status.success?.should be_true
-    stdout.to_s.includes?("Lapis-Style Auto-Versioning").should be_true
+    stdout.to_s.includes?("Automated Version Control").should be_true
   end
 
   it "initializes a repository and creates shard.yml" do

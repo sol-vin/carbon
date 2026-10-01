@@ -1,10 +1,10 @@
 name: carbon
-version: 0.1.5
+version: 0.1.6
 authors:
   - Ian Rash <redcodefinal@gmail.com>
 
 description: |
-  Lapis-style automated versioning system and Crystal DSL for Git repositories.
+  Automated commit-based versioning system and Crystal DSL for Git repositories.
   Automatically increments major.minor.commit_number with each commit.
 
 license: MIT
