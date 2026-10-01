@@ -231,6 +231,7 @@ module Carbon
 
       parser = OptionParser.new do |opts|
         opts.banner = "Usage: carbon changelog [options]"
+        opts.on("--sync", "Synchronize changelog.yml with new Git commits (default)") { }
         opts.on("--compile", "Only compile changelog.yml to CHANGELOG.md without pulling new commits") { compile_only = true }
         opts.on("--dry-run", "Preview compiled CHANGELOG.md on stdout without modifying files") { dry_run = true }
         opts.on("--from=REF", "Start commit reference or tag") { |v| from_ref = v }
