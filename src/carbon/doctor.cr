@@ -57,6 +57,7 @@ module Carbon
     private def check_hook
       git = VCS::Git.new(@repo_root)
       return unless git.initialized?
+      return if ENV["CI"]? == "true"
 
       unless HookManager.installed?(@repo_root)
         @issues << DoctorIssue.new(
