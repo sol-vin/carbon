@@ -1,7 +1,17 @@
 # CARBON CHANGELOG
+## [0.1.4] - 2026-10-01
+### ✨ Features & Improvements
+- ✦ initial commit for carbon version control shard (`55eff71`)
+- ✦ **[CHANGELOG]** add YAML changelog engine, doctor audit, and release manager (`6f6f58b`)
+
+### 🛠️ Chores & Tooling
+- • dynamically assert macro version against shard.yml (`1e4bc97`)
+
+---
 ## [0.1.3] - 2026-10-01
 ### ✨ Features & Improvements
 - ✦ initial commit for carbon version control shard (`55eff71`)
+- ✦ **[CHANGELOG]** add YAML changelog engine, doctor audit, and release manager (`6f6f58b`)
 
 ### 🛠️ Chores & Tooling
 - • dynamically assert macro version against shard.yml (`1e4bc97`)
