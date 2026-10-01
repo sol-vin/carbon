@@ -102,7 +102,7 @@ module Carbon
       # Check version.cr parity
       src_dir = @repo_root.join("src")
       if Dir.exists?(src_dir)
-        Dir.glob(src_dir.join("**", "version.cr").to_s).each do |vfile|
+        Dir.glob(src_dir.join("**", "version.cr").to_posix.to_s).each do |vfile|
           p = Path.new(vfile)
           content = File.read(p)
           if match = FileManager::CRYSTAL_VERSION_REGEX.match(content)

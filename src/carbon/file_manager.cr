@@ -128,7 +128,7 @@ module Carbon
       # 2. Auto-discover version.cr files in src/
       src_dir = root.join("src")
       if Dir.exists?(src_dir)
-        Dir.glob(src_dir.join("**", "version.cr").to_s).each do |vfile|
+        Dir.glob(src_dir.join("**", "version.cr").to_posix.to_s).each do |vfile|
           p = Path.new(vfile)
           if update_crystal_version_file(p, new_version)
             updated_paths << p
@@ -136,7 +136,7 @@ module Carbon
         end
 
         # 3. Auto-discover C/C++ version header files in src/
-        Dir.glob(src_dir.join("**", "*version*.h").to_s).each do |hfile|
+        Dir.glob(src_dir.join("**", "*version*.h").to_posix.to_s).each do |hfile|
           p = Path.new(hfile)
           if update_c_header_version_file(p, new_version)
             updated_paths << p
