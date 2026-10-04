@@ -461,7 +461,6 @@ module Carbon
         else
           puts "Badges in #{manifest.settings.target_file} are already up to date."
         end
-
       when "check"
         manifest = Badges::Manager.load(".")
         if file_override = target_file_override
@@ -477,7 +476,6 @@ module Carbon
           puts "  Run '\e[36mcarbon badges\e[0m' to update badges."
           exit 1
         end
-
       when "init"
         badges_yaml = Badges::Manager.yaml_path(".")
         manifest = if File.exists?(badges_yaml)
@@ -499,7 +497,6 @@ module Carbon
           Badges::Manager.sync(".", inject_if_missing: true)
           puts "\e[32m✓\e[0m Injected and rendered badges into \e[1m#{manifest.settings.target_file}\e[0m"
         end
-
       when "list"
         manifest = Badges::Manager.load(".")
         meta = Badges::Detector.detect(".")

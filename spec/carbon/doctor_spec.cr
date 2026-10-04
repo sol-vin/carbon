@@ -5,7 +5,7 @@ describe Carbon::Doctor do
     with_temp_git_repo do |dir|
       File.write(dir.join("shard.yml"), "name: app\nversion: 0.1.0\n")
 
-      doc = Carbon::Doctor.new(dir)
+      doc = Carbon::Doctor.new(dir, check_hook_in_ci: true)
       issues = doc.run
 
       hook_issue = issues.find { |i| i.category == "Hooks" }
@@ -19,6 +19,26 @@ describe Carbon::Doctor do
       # Re-audit
       doc.run.any? { |i| i.category == "Hooks" }.should be_false
       Carbon::HookManager.installed?(dir).should be_true
+    end
+  end
+
+  it "skips hook check in CI environments when check_hook_in_ci is false" do
+    with_temp_git_repo do |dir|
+      File.write(dir.join("shard.yml"), "name: app\nversion: 0.1.0\n")
+
+      old_ci = ENV["CI"]?
+      begin
+        ENV["CI"] = "true"
+        doc = Carbon::Doctor.new(dir, check_hook_in_ci: false)
+        issues = doc.run
+        issues.any? { |i| i.category == "Hooks" }.should be_false
+      ensure
+        if old_ci
+          ENV["CI"] = old_ci
+        else
+          ENV.delete("CI")
+        end
+      end
     end
   end
 

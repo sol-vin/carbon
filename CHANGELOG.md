@@ -1,4 +1,25 @@
 # CARBON CHANGELOG
+## [0.1.12] - 2026-10-04
+### ✨ Features & Improvements
+- ✦ initial commit for carbon version control shard (`55eff71`)
+- ✦ **[CHANGELOG]** add YAML changelog engine, doctor audit, and release manager (`6f6f58b`)
+- ✦ **[CLI]** accept --sync flag in changelog command (`37b8438`)
+- ✦ **[BADGES]** add badge management system for READMEs (`91359e8`)
+- ✦ **[VCS]** squash-resilient monotonic commit numbering, huge commit count support, and explicit carbon set <major.minor[.commit]> (`16e5d6f`)
+
+### 🐛 Bug Fixes
+- ✓ **[GLOB]** normalize search path to POSIX format for cross-platform Windows compatibility (`c1bf604`)
+- ✓ **[DOCTOR]** skip pre-commit hook check in CI environments (`37480c6`)
+
+### 📚 Documentation
+- 📖 **[CHANGELOG]** update changelog for 0.1.3 release (`73ad2e4`)
+- 📖 refine documentation to focus purely on Carbon VCS mechanics (`a525559`)
+
+### 🛠️ Chores & Tooling
+- • dynamically assert macro version against shard.yml (`1e4bc97`)
+- • add carbon binary to GITHUB_PATH in workflow (`7e712ee`)
+
+---
 ## [0.1.11] - 2026-10-04
 ### ✨ Features & Improvements
 - ✦ initial commit for carbon version control shard (`55eff71`)

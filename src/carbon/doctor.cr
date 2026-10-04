@@ -17,8 +17,9 @@ module Carbon
 
   class Doctor
     getter issues : Array(DoctorIssue)
+    property? check_hook_in_ci : Bool
 
-    def initialize(@repo_root : Path = Path.new("."))
+    def initialize(@repo_root : Path = Path.new("."), @check_hook_in_ci : Bool = false)
       @issues = [] of DoctorIssue
     end
 
@@ -58,7 +59,7 @@ module Carbon
     private def check_hook
       git = VCS::Git.new(@repo_root)
       return unless git.initialized?
-      return if ENV["CI"]? == "true"
+      return if ENV["CI"]? == "true" && !@check_hook_in_ci
 
       unless HookManager.installed?(@repo_root)
         @issues << DoctorIssue.new(
