@@ -1,0 +1,13 @@
+settings:
+  target_file: README.md
+  tag: carbon:badges
+  style: flat
+  layout: block
+
+badges:
+  - type: ci
+    workflow: ci.yml
+    label: CI
+  - type: crystal
+  - type: version
+  - type: license

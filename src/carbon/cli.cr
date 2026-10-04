@@ -31,6 +31,8 @@ module Carbon
         cmd_check(subargs)
       when "changelog"
         cmd_changelog(subargs)
+      when "badges", "badge"
+        cmd_badges(subargs)
       when "tag", "release"
         cmd_tag(subargs)
       when "doctor"
@@ -52,6 +54,7 @@ module Carbon
     private def cmd_init(args : Array(String))
       install_hook = true
       init_changelog = true
+      init_badges = true
       major = 0
       minor = 1
 
@@ -59,6 +62,7 @@ module Carbon
         opts.banner = "Usage: carbon init [options]"
         opts.on("--no-hook", "Do not install git pre-commit hook") { install_hook = false }
         opts.on("--no-changelog", "Do not generate changelog.yml") { init_changelog = false }
+        opts.on("--no-badges", "Do not initialize badges.yml or README badges") { init_badges = false }
         opts.on("--major=N", "Set initial major version (default: 0)") { |v| major = v.to_i }
         opts.on("--minor=N", "Set initial minor version (default: 1)") { |v| minor = v.to_i }
         opts.on("-h", "--help", "Show help") { puts opts; exit 0 }
@@ -96,6 +100,19 @@ module Carbon
           Changelog::Manager.save(manifest, ".")
           Changelog::Manager.compile(manifest, ".")
           puts "\e[32m✓\e[0m Created \e[36mchangelog.yml\e[0m and compiled \e[36mCHANGELOG.md\e[0m"
+        end
+      end
+
+      if init_badges
+        readme_path = Path.new("README.md")
+        if File.exists?(readme_path)
+          badges_yaml = Badges::Manager.yaml_path(".")
+          unless File.exists?(badges_yaml)
+            default_m = Badges::Manager.generate_default_manifest(".")
+            Badges::Manager.save(default_m, ".")
+          end
+          Badges::Manager.sync(".", version_override: init_version.to_s, inject_if_missing: true)
+          puts "\e[32m✓\e[0m Initialized \e[36mbadges.yml\e[0m and rendered badges in \e[36mREADME.md\e[0m"
         end
       end
 
@@ -367,6 +384,123 @@ module Carbon
       end
     end
 
+    private def cmd_badges(args : Array(String))
+      action = "render"
+      dry_run = false
+      inject = false
+      target_file_override : String? = nil
+      remaining = [] of String
+
+      parser = OptionParser.new do |opts|
+        opts.banner = "Usage: carbon badges [action] [options]"
+        opts.on("--render", "Render and update badges in target markdown file (default)") { action = "render" }
+        opts.on("--check", "Check if badges in target file are synchronized") { action = "check" }
+        opts.on("--init", "Generate badges.yml and inject tags into README.md") { action = "init" }
+        opts.on("--list", "List configured and discovered badges") { action = "list" }
+        opts.on("--dry-run", "Preview rendered badges on stdout without modifying files") { dry_run = true }
+        opts.on("--inject", "Inject badge tags into markdown file if missing") { inject = true }
+        opts.on("--file=FILE", "Target markdown file (default: README.md)") { |f| target_file_override = f }
+        opts.on("-h", "--help", "Show help") { puts opts; exit 0 }
+        opts.unknown_args { |raw| remaining = raw }
+      end
+      parser.parse(args)
+
+      if first = remaining.first?
+        case first
+        when "render", "sync"
+          action = "render"
+        when "check"
+          action = "check"
+        when "init"
+          action = "init"
+        when "list"
+          action = "list"
+        end
+      end
+
+      case action
+      when "render"
+        manifest = Badges::Manager.load(".")
+        if file_override = target_file_override
+          manifest.settings.target_file = file_override
+        end
+
+        rendered = Badges::Manager.render(".", manifest: manifest)
+
+        if dry_run
+          puts rendered
+          return
+        end
+
+        target_path = Path.new(".").join(manifest.settings.target_file)
+        unless File.exists?(target_path)
+          STDERR.puts "\e[31m[carbon error]\e[0m Target file '#{manifest.settings.target_file}' not found."
+          exit 1
+        end
+
+        content = File.read(target_path)
+        unless Badges::Injector.has_tag?(content) || inject
+          STDERR.puts "\e[33m!\e[0m No '<!-- carbon:badges -->' tag found in #{manifest.settings.target_file}."
+          STDERR.puts "  Add '<!-- carbon:badges --> <!-- /carbon:badges -->' or run 'carbon badges --inject'."
+          exit 1
+        end
+
+        updated_path = Badges::Manager.sync(".", inject_if_missing: inject)
+        if updated_path
+          puts "\e[32m✓\e[0m Synchronized badges in \e[1m#{manifest.settings.target_file}\e[0m"
+        else
+          puts "Badges in #{manifest.settings.target_file} are already up to date."
+        end
+
+      when "check"
+        manifest = Badges::Manager.load(".")
+        if file_override = target_file_override
+          manifest.settings.target_file = file_override
+        end
+
+        res = Badges::Manager.check(".")
+        if res[:synced]
+          puts "\e[32m✓ In sync!\e[0m #{res[:message]}."
+          exit 0
+        else
+          puts "\e[33m! Out of sync:\e[0m #{res[:message]}."
+          puts "  Run '\e[36mcarbon badges\e[0m' to update badges."
+          exit 1
+        end
+
+      when "init"
+        badges_yaml = Badges::Manager.yaml_path(".")
+        manifest = if File.exists?(badges_yaml)
+                     puts "\e[32m✓\e[0m Found existing badges.yml"
+                     Badges::Manager.load(".")
+                   else
+                     default_m = Badges::Manager.generate_default_manifest(".")
+                     Badges::Manager.save(default_m, ".")
+                     puts "\e[32m✓\e[0m Created \e[36mbadges.yml\e[0m with #{default_m.badges.size} detected badges"
+                     default_m
+                   end
+
+        if file_override = target_file_override
+          manifest.settings.target_file = file_override
+        end
+
+        target_path = Path.new(".").join(manifest.settings.target_file)
+        if File.exists?(target_path)
+          Badges::Manager.sync(".", inject_if_missing: true)
+          puts "\e[32m✓\e[0m Injected and rendered badges into \e[1m#{manifest.settings.target_file}\e[0m"
+        end
+
+      when "list"
+        manifest = Badges::Manager.load(".")
+        meta = Badges::Detector.detect(".")
+        puts "\e[1mConfigured Badges (#{manifest.badges.size}):\e[0m"
+        manifest.badges.each_with_index do |b, idx|
+          badge_snippet = Badges::Builder.build(b, meta, default_style: manifest.settings.style)
+          puts "  #{idx + 1}. \e[36m#{b.type}\e[0m: #{badge_snippet}"
+        end
+      end
+    end
+
     private def print_help
       puts <<-HELP
       \e[1mCarbon\e[0m - Automated Version Control & Changelog System for Crystal Apps
@@ -382,10 +516,20 @@ module Carbon
         \e[36mget, version\e[0m         Display current project version (use -p for raw output)
         \e[36mcheck\e[0m                Verify whether shard.yml is in sync with Git commits
         \e[36mchangelog\e[0m            Manage changelog.yml & compile CHANGELOG.md
+        \e[36mbadges\e[0m              Manage README badges (render | check | init | list)
         \e[36mtag, release\e[0m         Seal changelog, create release tag, & update floating latest
         \e[36mdoctor\e[0m               Audit repository health, version parity, and fix issues
         \e[36mhook\e[0m                 Manage Git pre-commit hook (install | uninstall | status)
         \e[36mhelp\e[0m                 Show this help manual
+
+      \e[1mBADGES OPTIONS:\e[0m
+        --render             Render and update badges in target markdown file (default)
+        --check              Verify whether README badges match current versions
+        --init               Generate badges.yml and inject tags into README.md
+        --list               List configured and discovered badges
+        --dry-run            Preview rendered markdown badges without writing to disk
+        --inject             Inject badge tags if missing from markdown file
+        --file=FILE          Specify markdown target file (default: README.md)
 
       \e[1mCHANGELOG OPTIONS:\e[0m
         --sync               Synchronize changelog.yml with new Git commits (default)
@@ -399,6 +543,7 @@ module Carbon
         carbon set 1.0
         carbon bump --minor
         carbon changelog
+        carbon badges
         carbon tag v1.0.0 --push
         carbon doctor --fix
       HELP

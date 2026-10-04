@@ -1,0 +1,5 @@
+require "./badges/models"
+require "./badges/detector"
+require "./badges/builder"
+require "./badges/injector"
+require "./badges/manager"

@@ -41,6 +41,13 @@ module Carbon
       updated_files << root.join("CHANGELOG.md")
     end
 
+    # Sync badges if present or configured
+    if Badges::Manager.configured?(root)
+      if badge_target = Badges::Manager.sync(root, version_override: synced.to_s)
+        updated_files << badge_target
+      end
+    end
+
     if stage && git.initialized? && !updated_files.empty?
       git.stage(updated_files.map(&.to_s))
     end
@@ -77,6 +84,13 @@ module Carbon
       updated_files << root.join("CHANGELOG.md")
     end
 
+    # Sync badges if present or configured
+    if Badges::Manager.configured?(root)
+      if badge_target = Badges::Manager.sync(root, version_override: new_version.to_s)
+        updated_files << badge_target
+      end
+    end
+
     if stage && git.initialized? && !updated_files.empty?
       git.stage(updated_files.map(&.to_s))
     end
@@ -105,6 +119,13 @@ module Carbon
       Changelog::Manager.sync(root, version_override: new_version.to_s)
       updated_files << Changelog::Manager.yaml_path(root)
       updated_files << root.join("CHANGELOG.md")
+    end
+
+    # Sync badges if present or configured
+    if Badges::Manager.configured?(root)
+      if badge_target = Badges::Manager.sync(root, version_override: new_version.to_s)
+        updated_files << badge_target
+      end
     end
 
     if stage && git.initialized? && !updated_files.empty?

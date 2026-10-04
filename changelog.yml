@@ -22,9 +22,64 @@ settings:
       title: "\U0001F6E0️ Chores & Tooling"
       bullet: •
 releases:
+- version: 0.1.10
+  date: "2026-10-04"
+  status: active
+  entries:
+  - type: feat
+    description: initial commit for carbon version control shard
+    bullet: ✦
+    hash: 55eff71
+    author: Ian Rash
+  - type: test
+    description: dynamically assert macro version against shard.yml
+    bullet: •
+    hash: 1e4bc97
+    author: Ian Rash
+  - type: feat
+    description: add YAML changelog engine, doctor audit, and release manager
+    bullet: ✦
+    badge: '[CHANGELOG]'
+    hash: 6f6f58b
+    author: Ian Rash
+  - type: docs
+    description: update changelog for 0.1.3 release
+    bullet: "\U0001F4D6"
+    badge: '[CHANGELOG]'
+    hash: 73ad2e4
+    author: Ian Rash
+  - type: ci
+    description: add carbon binary to GITHUB_PATH in workflow
+    bullet: •
+    hash: 7e712ee
+    author: Ian Rash
+  - type: docs
+    description: refine documentation to focus purely on Carbon VCS mechanics
+    bullet: "\U0001F4D6"
+    hash: a525559
+    author: Ian Rash
+  - type: fix
+    description: normalize search path to POSIX format for cross-platform Windows
+      compatibility
+    bullet: ✓
+    badge: '[GLOB]'
+    hash: c1bf604
+    author: Ian Rash
+  - type: feat
+    description: accept --sync flag in changelog command
+    bullet: ✦
+    badge: '[CLI]'
+    hash: 37b8438
+    author: Ian Rash
+  - type: fix
+    description: skip pre-commit hook check in CI environments
+    bullet: ✓
+    badge: '[DOCTOR]'
+    hash: 37480c6
+    author: Ian Rash
 - version: 0.1.9
   date: "2026-10-01"
-  status: active
+  status: released
   entries:
   - type: feat
     description: initial commit for carbon version control shard

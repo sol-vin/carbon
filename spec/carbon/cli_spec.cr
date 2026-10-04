@@ -67,6 +67,41 @@ describe "Carbon CLI" do
       stdout.to_s.strip.should eq("3.4.100")
     end
   end
+
+  it "previews badges with carbon badges --dry-run" do
+    with_temp_dir do |dir|
+      shard_file = dir.join("shard.yml")
+      File.write(shard_file, "name: demo\nversion: 1.0.5\nlicense: MIT\n")
+
+      stdout = IO::Memory.new
+      status = Process.run(bin_path, ["badges", "--dry-run"], chdir: dir.to_s, output: stdout)
+      status.success?.should be_true
+      stdout.to_s.includes?("version-1.0.5-blue.svg").should be_true
+    end
+  end
+
+  it "initializes badges and checks sync status" do
+    with_temp_dir do |dir|
+      shard_file = dir.join("shard.yml")
+      File.write(shard_file, "name: demo\nversion: 0.5.0\nlicense: MIT\n")
+
+      readme_file = dir.join("README.md")
+      File.write(readme_file, "# Demo App\n\nDemo description.")
+
+      status = Process.run(bin_path, ["badges", "init"], chdir: dir.to_s)
+      status.success?.should be_true
+
+      File.exists?(dir.join("badges.yml")).should be_true
+      File.read(readme_file).includes?("<!-- carbon:badges -->").should be_true
+      File.read(readme_file).includes?("version-0.5.0-blue.svg").should be_true
+
+      # Verify check succeeds
+      stdout = IO::Memory.new
+      check_status = Process.run(bin_path, ["badges", "check"], chdir: dir.to_s, output: stdout)
+      check_status.success?.should be_true
+      stdout.to_s.includes?("In sync").should be_true
+    end
+  end
 end
 
 module HostPlatform

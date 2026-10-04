@@ -78,6 +78,35 @@ module Carbon
         res[:status].success? && !res[:output].strip.empty?
       end
 
+      # Returns the URL for a remote (default: "origin")
+      def origin_url(remote_name : String = "origin") : String?
+        res = run_git(["remote", "get-url", remote_name])
+        if res[:status].success?
+          url = res[:output].strip
+          url.empty? ? nil : url
+        else
+          nil
+        end
+      end
+
+      # Extracts GitHub slug "owner/repo" from origin URL if hosted on GitHub
+      def github_slug(remote_name : String = "origin") : String?
+        url = origin_url(remote_name)
+        return nil unless url
+
+        self.class.parse_github_slug(url)
+      end
+
+      # Pure parser for GitHub remote URLs (HTTPS, SSH, git@)
+      def self.parse_github_slug(url : String) : String?
+        trimmed = url.strip.sub(/\.git$/, "")
+        if match = trimmed.match(%r{github\.com[:/]([^/]+)/([^/]+)$})
+          "#{match[1]}/#{match[2]}"
+        else
+          nil
+        end
+      end
+
       private def run_git(args : Array(String)) : NamedTuple(status: Process::Status, output: String, error: String)
         stdout = IO::Memory.new
         stderr = IO::Memory.new

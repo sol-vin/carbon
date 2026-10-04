@@ -1,8 +1,11 @@
 # Carbon ⚡
 
+<!-- carbon:badges -->
 [![CI](https://github.com/sol-vin/carbon/actions/workflows/ci.yml/badge.svg)](https://github.com/sol-vin/carbon/actions/workflows/ci.yml)
-[![Crystal](https://img.shields.io/badge/crystal-%3E%3D1.20.0-black.svg)](https://crystal-lang.org)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Crystal](https://img.shields.io/badge/crystal-%3E%3D%201.20.0-black.svg)](https://crystal-lang.org)
+[![Version](https://img.shields.io/badge/version-0.1.10-blue.svg)](https://github.com/sol-vin/carbon/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+<!-- /carbon:badges -->
 
 > **Automated commit-based version control, human-friendly YAML changelogs, and Crystal DSL for modern apps and shards.**
 
@@ -14,6 +17,7 @@ $$\textbf{Version Format:} \quad \mathbf{\langle major \rangle.\langle minor \ra
 - **`major.minor`**: Left entirely under developer control to bump when cutting feature milestones or breaking changes.
 - **Zero-Friction Git Hooks**: Automatically stages updated manifests during `pre-commit` so that each commit carries its exact chronological build number in its own Git tree.
 - **YAML-Driven Changelogs (`changelog.yml` $\to$ `CHANGELOG.md`)**: Human-editable YAML source of truth that compiles into structured Markdown. **Never overwrites existing entries**, preserving all your hand-written descriptions, typo fixes, custom notes, and bullet choices permanently.
+- **Badge Management System (`badges.yml` $\to$ `README.md`)**: Automatically updates and renders version, CI, Crystal, license, and docs badges into markdown tags (`<!-- carbon:badges -->`), keeping documentation 100% in sync with releases.
 - **Multi-Target File Synchronization**: Automatically updates `shard.yml`, `src/**/version.cr`, and C/C++ version headers simultaneously, ending version drift across multi-component projects.
 - **Git Tag & Release Manager**: Seals changelog entries, tags annotated Git releases (`vX.Y.Z`), updates floating `latest` tags, and pushes with zero friction.
 - **Compile-Time Macro DSL**: Injects version and Git metadata into your classes with zero runtime overhead via `Carbon.version!`.
@@ -374,10 +378,101 @@ jobs:
 
 ---
 
+## Badge Management System (`badges.yml` $\to$ `README.md`)
+
+README documentation badges (version numbers, CI workflow statuses, Crystal constraints, licenses, documentation sites) frequently fall out of sync with real releases and manifests. Carbon provides a zero-friction **Badge Management System** that automatically updates and renders your badges directly into your `README.md`.
+
+```mermaid
+flowchart LR
+    Config["badges.yml / Auto-Discovery"] --> Engine["Carbon Badge Engine"]
+    Engine -->|"Render into <!-- carbon:badges -->"| Readme["README.md"]
+    Bump["carbon bump / sync"] -->|"Auto-Sync Version"| Engine
+```
+
+### 1. Special Markdown Tag
+
+Simply place the `<!-- carbon:badges -->` tag block anywhere in your `README.md` (or any target markdown file):
+
+```markdown
+<!-- carbon:badges -->
+<!-- /carbon:badges -->
+```
+
+*(You can even write shorthand `<!-- badges -->` or a single unclosed `<!-- carbon:badges -->` line; Carbon will expand it into paired tags automatically on first render. Badges placed inside `<div align="center">` are fully preserved).*
+
+### 2. Auto-Discovery & Zero-Config
+
+If you don't have a `badges.yml`, Carbon automatically detects:
+- **CI Workflows**: Inspects `.github/workflows/` (e.g. `ci.yml`) and links to GitHub Actions.
+- **Crystal Language**: Inspects `shard.yml` constraint (`crystal: ">= 1.20.0"`).
+- **Project Version**: Uses current Carbon release version and links to GitHub Releases or `shard.yml`.
+- **License**: Detects `license:` in `shard.yml` or your `LICENSE` file.
+- **Documentation**: Detects GitHub Pages (`https://<owner>.github.io/<repo>/`) or `docs/`.
+
+### 3. Human-Editable YAML Configuration (`badges.yml`)
+
+Run `carbon badges init` to scaffold a `badges.yml` source of truth:
+
+```yaml
+settings:
+  target_file: "README.md"
+  tag: "carbon:badges"
+  style: "flat"       # flat, flat-square, plastic, for-the-badge, social
+  layout: "block"     # block (one per line) or inline_compact (space-separated)
+
+badges:
+  - type: ci
+    workflow: ci.yml
+  - type: crystal
+  - type: version
+    color: blue
+  - type: license
+  - type: docs
+  - type: commits
+  - type: github_release
+  - type: github_stars
+  - type: custom
+    label: "chat"
+    message: "discord"
+    color: "7289da"
+    logo: "discord"
+    url: "https://discord.gg/your_channel"
+```
+
+### 4. Automatic Lifecycle Syncing
+
+Whenever you run:
+- `carbon bump`: Bumps version and updates the README version badge immediately.
+- `carbon sync`: Aligns README badges with Git commit count and version.
+- `carbon set 1.0`: Re-renders version badge with the new milestone.
+
+When run with `--stage` (or inside the Git `pre-commit` hook), updated badges are **automatically staged in the same commit**!
+
+### 5. CLI Commands
+
+```bash
+# Render and update badges in README.md
+carbon badges
+
+# Preview rendered markdown without modifying disk
+carbon badges --dry-run
+
+# Audit if README badges match current version and config (exit code 0 if in sync)
+carbon badges check
+
+# Initialize badges.yml and inject tags into README.md
+carbon badges init
+
+# List all configured and discovered badges
+carbon badges list
+```
+
+---
+
 ## Running Specs
 
 ```bash
-# Run full test specifications (47 passing specs)
+# Run full test specifications (72 passing specs)
 crystal spec --error-trace
 
 # Build CLI binary

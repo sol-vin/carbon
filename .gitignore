@@ -1,6 +1,8 @@
-/bin/
-/lib/
-/.shards/
+bin/
+lib/
+lib
+bin
+.shards/
 *.dwarf
 *.pdb
 *.o

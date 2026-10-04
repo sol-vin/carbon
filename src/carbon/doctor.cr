@@ -28,6 +28,7 @@ module Carbon
       check_hook
       check_versions
       check_changelog
+      check_badges
       @issues
     end
 
@@ -141,6 +142,20 @@ module Carbon
           "CHANGELOG.md is not compiled",
           fixable: true,
           fix_action: -> { Changelog::Manager.compile(Changelog::Manager.load(@repo_root), @repo_root); nil }
+        )
+      end
+    end
+
+    private def check_badges
+      return unless Badges::Manager.configured?(@repo_root)
+
+      res = Badges::Manager.check(@repo_root)
+      unless res[:synced]
+        @issues << DoctorIssue.new(
+          "Badges",
+          res[:message],
+          fixable: true,
+          fix_action: -> { Badges::Manager.sync(@repo_root, inject_if_missing: true); nil }
         )
       end
     end
