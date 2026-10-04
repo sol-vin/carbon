@@ -3,7 +3,7 @@
 <!-- carbon:badges -->
 [![CI](https://github.com/sol-vin/carbon/actions/workflows/ci.yml/badge.svg)](https://github.com/sol-vin/carbon/actions/workflows/ci.yml)
 [![Crystal](https://img.shields.io/badge/crystal-%3E%3D%201.20.0-black.svg)](https://crystal-lang.org)
-[![Version](https://img.shields.io/badge/version-0.1.12-blue.svg)](https://github.com/sol-vin/carbon/releases)
+[![Version](https://img.shields.io/badge/version-0.1.13-blue.svg)](https://github.com/sol-vin/carbon/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 <!-- /carbon:badges -->
 

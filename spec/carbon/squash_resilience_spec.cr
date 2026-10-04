@@ -60,4 +60,30 @@ describe "Carbon Squash Resilience & Huge Commit Numbers" do
       Carbon::FileManager.read_shard_version(dir.join("shard.yml")).should eq(Carbon::Version.new(0, 1, 295))
     end
   end
+
+  it "is idempotent across multiple bump calls for the same upcoming commit" do
+    with_temp_git_repo do |dir|
+      File.write(dir.join("shard.yml"), "name: demo\nversion: 0.1.0\n")
+
+      # First bump before any commit
+      ver1 = Carbon.bump!(Carbon::BumpType::Commit, repo_root: dir)
+      ver1.should eq(Carbon::Version.new(0, 1, 1))
+
+      # Second bump before any commit - must stay 1 and not become 2
+      ver2 = Carbon.bump!(Carbon::BumpType::Commit, repo_root: dir)
+      ver2.should eq(Carbon::Version.new(0, 1, 1))
+
+      # Commit
+      Process.run("git", ["add", "."], chdir: dir.to_s)
+      Process.run("git", ["commit", "-m", "first commit"], chdir: dir.to_s)
+
+      # Next commit bump
+      ver3 = Carbon.bump!(Carbon::BumpType::Commit, repo_root: dir)
+      ver3.should eq(Carbon::Version.new(0, 1, 2))
+
+      # Repeated bump for second commit - stays 2
+      ver4 = Carbon.bump!(Carbon::BumpType::Commit, repo_root: dir)
+      ver4.should eq(Carbon::Version.new(0, 1, 2))
+    end
+  end
 end

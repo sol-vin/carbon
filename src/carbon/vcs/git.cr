@@ -97,6 +97,15 @@ module Carbon
         self.class.parse_github_slug(url)
       end
 
+      # Returns file contents at specified revision (default HEAD), or nil if absent / no commits
+      def show_file(path : String | Path, rev : String = "HEAD") : String?
+        rel_path = Path.new(path)
+        rel_str = rel_path.relative_to?(@repo_root).try(&.to_s) || rel_path.to_s
+        rel_str = rel_str.gsub('\\', '/')
+        res = run_git(["show", "#{rev}:#{rel_str}"])
+        res[:status].success? ? res[:output] : nil
+      end
+
       # Pure parser for GitHub remote URLs (HTTPS, SSH, git@)
       def self.parse_github_slug(url : String) : String?
         trimmed = url.strip.sub(/\.git$/, "")

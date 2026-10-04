@@ -24,6 +24,11 @@ module Carbon
 
       # Returns true if VCS repository is properly initialized
       abstract def initialized? : Bool
+
+      # Returns file contents at specified revision (default HEAD), or nil if absent / no commits
+      def show_file(path : String | Path, rev : String = "HEAD") : String?
+        nil
+      end
     end
   end
 end

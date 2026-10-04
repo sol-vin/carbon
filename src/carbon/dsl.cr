@@ -70,8 +70,26 @@ module Carbon
 
     new_version = case type
                   in .commit?
-                    # Squash-resilient: commit number monotonically increases and never decreases even if Git history was squashed
-                    target_commits = Math.max(git.initialized? ? git.commit_count + 1 : 0, curr.commit + 1)
+                    # Squash-resilient: commit number monotonically increases and never decreases even if Git history was squashed.
+                    head_commit = 0
+                    if git.initialized? && git.commit_count > 0
+                      if head_shard = git.show_file(root.join("shard.yml"))
+                        if head_ver = FileManager.parse_shard_version(head_shard)
+                          head_commit = head_ver.commit
+                        end
+                      end
+                    end
+
+                    target_commits = if git.initialized?
+                                       base = Math.max(git.commit_count, head_commit)
+                                       if curr.commit > base
+                                         curr.commit == base + 1 ? curr.commit : Math.max(base + 1, curr.commit)
+                                       else
+                                         base + 1
+                                       end
+                                     else
+                                       curr.commit + 1
+                                     end
                     curr.bump_commit(target_commits)
                   in .minor?
                     curr.bump_minor(reset_commit: reset_commit)

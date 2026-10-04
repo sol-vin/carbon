@@ -15,19 +15,23 @@ module Carbon
     # Regex for C/C++ header #define ...VERSION "..."
     C_HEADER_VERSION_REGEX = /^(\s*#define\s+[A-Za-z0-9_]*VERSION\s+)(["'])([^"'\r\n]+)\2(\s*(?:\/.*)?)$/
 
-    # Reads the version string from shard.yml and parses it into a Carbon::Version
-    def self.read_shard_version(shard_path : Path | String = "shard.yml") : Version?
-      path = Path.new(shard_path)
-      return nil unless File.exists?(path)
-
-      File.each_line(path) do |line|
+    # Parses the version string from shard.yml content and returns a Carbon::Version
+    def self.parse_shard_version(content : String) : Version?
+      content.each_line do |line|
         if match = VERSION_LINE_REGEX.match(line)
           ver_str = match[3].strip
           return Version.parse?(ver_str)
         end
       end
-
       nil
+    end
+
+    # Reads the version string from shard.yml and parses it into a Carbon::Version
+    def self.read_shard_version(shard_path : Path | String = "shard.yml") : Version?
+      path = Path.new(shard_path)
+      return nil unless File.exists?(path)
+
+      parse_shard_version(File.read(path))
     end
 
     # Updates shard.yml with the new version, preserving quotes, indentation, and comments
