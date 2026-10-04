@@ -63,4 +63,21 @@ describe Carbon::HookManager do
       content.includes?(Carbon::HookManager::START_DELIMITER).should be_false
     end
   end
+
+  it "installs and uninstalls post-merge hook for automated sync" do
+    with_temp_git_repo do |dir|
+      Carbon::HookManager.installed?(dir, hook_name: "post-merge").should be_false
+
+      Carbon::HookManager.install(dir, hook_name: "post-merge").should be_true
+      Carbon::HookManager.installed?(dir, hook_name: "post-merge").should be_true
+
+      hook_path = Carbon::HookManager.hook_path(dir, hook_name: "post-merge")
+      File.exists?(hook_path).should be_true
+      content = File.read(hook_path)
+      content.includes?("carbon sync").should be_true
+
+      Carbon::HookManager.uninstall(dir, hook_name: "post-merge").should be_true
+      Carbon::HookManager.installed?(dir, hook_name: "post-merge").should be_false
+    end
+  end
 end

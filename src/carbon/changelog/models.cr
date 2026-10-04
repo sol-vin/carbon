@@ -19,6 +19,8 @@ module Carbon
       property output_file : String = "CHANGELOG.md"
       property ascii_banner : String? = nil
       property header : String? = nil
+      property auto_link_github : Bool = true
+      property github_slug : String? = nil
       property categories : Hash(String, CategoryConfig) = Settings.default_categories
 
       def initialize(
@@ -26,6 +28,8 @@ module Carbon
         @output_file : String = "CHANGELOG.md",
         @ascii_banner : String? = nil,
         @header : String? = nil,
+        @auto_link_github : Bool = true,
+        @github_slug : String? = nil,
         @categories : Hash(String, CategoryConfig) = Settings.default_categories,
       )
       end

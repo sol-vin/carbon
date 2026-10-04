@@ -169,6 +169,13 @@ module Carbon
         settings = manifest.settings
         io = IO::Memory.new
 
+        git = VCS::Git.new(repo_root)
+        slug = if settings.auto_link_github
+                 settings.github_slug || (git.initialized? ? git.github_slug : nil)
+               else
+                 nil
+               end
+
         io.puts "# #{settings.title}\n"
 
         if banner = settings.ascii_banner
@@ -210,8 +217,23 @@ module Carbon
             entries.each do |e|
               bullet = e.bullet || cat_default_bullet
               badge = e.badge ? "**#{e.badge}** " : ""
-              hash_ref = e.hash ? " (`#{e.hash}`)" : ""
-              io.puts "- #{bullet} #{badge}#{e.description}#{hash_ref}"
+
+              desc = e.description
+              if slug
+                desc = desc.gsub(/(?<=\s|^)#(\d+)\b/, "[#\\1](https://github.com/#{slug}/issues/\\1)")
+              end
+
+              hash_ref = if (h = e.hash) && !h.empty?
+                           if slug
+                             " ([`#{h}`](https://github.com/#{slug}/commit/#{h}))"
+                           else
+                             " (`#{h}`)"
+                           end
+                         else
+                           ""
+                         end
+
+              io.puts "- #{bullet} #{badge}#{desc}#{hash_ref}"
             end
             io.puts ""
           end

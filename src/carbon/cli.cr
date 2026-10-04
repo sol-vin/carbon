@@ -255,12 +255,15 @@ module Carbon
       from_ref : String? = nil
       to_ref = "HEAD"
       target_ver : String? = nil
+      links_override : Bool? = nil
 
       parser = OptionParser.new do |opts|
         opts.banner = "Usage: carbon changelog [options]"
         opts.on("--sync", "Synchronize changelog.yml with new Git commits (default)") { }
         opts.on("--compile", "Only compile changelog.yml to CHANGELOG.md without pulling new commits") { compile_only = true }
         opts.on("--dry-run", "Preview compiled CHANGELOG.md on stdout without modifying files") { dry_run = true }
+        opts.on("--links", "Force GitHub commit and issue hyperlinking") { links_override = true }
+        opts.on("--no-links", "Disable GitHub commit and issue hyperlinking") { links_override = false }
         opts.on("--from=REF", "Start commit reference or tag") { |v| from_ref = v }
         opts.on("--to=REF", "End commit reference (default: HEAD)") { |v| to_ref = v }
         opts.on("--version=VER", "Explicit release version target") { |v| target_ver = v }
@@ -270,6 +273,9 @@ module Carbon
 
       if compile_only
         manifest = Changelog::Manager.load(".")
+        unless links_override.nil?
+          manifest.settings.auto_link_github = links_override.not_nil!
+        end
         output = Changelog::Manager.compile(manifest, ".")
         if dry_run
           puts output
@@ -283,6 +289,10 @@ module Carbon
           from_ref: from_ref,
           to_ref: to_ref
         )
+        unless links_override.nil?
+          manifest.settings.auto_link_github = links_override.not_nil!
+          Changelog::Manager.compile(manifest, ".")
+        end
         if dry_run
           puts Changelog::Manager.compile(manifest, ".")
         else
@@ -366,27 +376,39 @@ module Carbon
     end
 
     private def cmd_hook(args : Array(String))
-      if args.empty?
-        STDERR.puts "Usage: carbon hook [install | uninstall | status]"
+      hook_name = "pre-commit"
+      remaining = [] of String
+
+      parser = OptionParser.new do |opts|
+        opts.banner = "Usage: carbon hook [install | uninstall | status] [options]"
+        opts.on("--post-merge", "Target Git post-merge hook instead of pre-commit") { hook_name = "post-merge" }
+        opts.on("--pre-commit", "Target Git pre-commit hook (default)") { hook_name = "pre-commit" }
+        opts.on("-h", "--help", "Show help") { puts opts; exit 0 }
+        opts.unknown_args { |raw| remaining = raw }
+      end
+      parser.parse(args)
+
+      if remaining.empty?
+        STDERR.puts "Usage: carbon hook [install | uninstall | status] [--post-merge]"
         exit 1
       end
 
-      sub = args.first
+      sub = remaining.first
       case sub
       when "install"
-        HookManager.install(".")
-        puts "\e[32m✓\e[0m Git pre-commit hook installed in .git/hooks/pre-commit"
+        HookManager.install(".", hook_name: hook_name)
+        puts "\e[32m✓\e[0m Git #{hook_name} hook installed in .git/hooks/#{hook_name}"
       when "uninstall", "remove"
-        if HookManager.uninstall(".")
-          puts "\e[32m✓\e[0m Git pre-commit hook uninstalled"
+        if HookManager.uninstall(".", hook_name: hook_name)
+          puts "\e[32m✓\e[0m Git #{hook_name} hook uninstalled"
         else
-          puts "No Carbon hook found to uninstall."
+          puts "No Carbon #{hook_name} hook found to uninstall."
         end
       when "status"
-        if HookManager.installed?(".")
-          puts "\e[32m✓\e[0m Carbon Git pre-commit hook is \e[1minstalled and active\e[0m"
+        if HookManager.installed?(".", hook_name: hook_name)
+          puts "\e[32m✓\e[0m Carbon Git #{hook_name} hook is \e[1minstalled and active\e[0m"
         else
-          puts "\e[33m!\e[0m Carbon Git hook is \e[1mnot installed\e[0m. Run 'carbon hook install'."
+          puts "\e[33m!\e[0m Carbon Git #{hook_name} hook is \e[1mnot installed\e[0m. Run 'carbon hook install --#{hook_name}'."
         end
       else
         STDERR.puts "Unknown hook command: '#{sub}'. Choose from: install, uninstall, status"

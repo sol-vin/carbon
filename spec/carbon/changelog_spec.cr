@@ -110,5 +110,45 @@ describe Carbon::Changelog do
         loaded.releases.first.date.should eq(Time.local.to_s("%Y-%m-%d"))
       end
     end
+
+    it "hyperlinks commit hashes and issue numbers when github_slug is configured" do
+      with_temp_dir do |dir|
+        manifest = Carbon::Changelog::Manifest.new
+        manifest.settings.github_slug = "sol-vin/carbon"
+
+        entry = Carbon::Changelog::Entry.new(
+          type: "fix",
+          description: "fix issue #42 in CLI parser",
+          hash: "a1b2c3d"
+        )
+        release = Carbon::Changelog::Release.new("0.1.0", "2026-10-01", "active", entries: [entry])
+        manifest.releases << release
+
+        markdown = Carbon::Changelog::Manager.compile(manifest, dir)
+        markdown.includes?("[#42](https://github.com/sol-vin/carbon/issues/42)").should be_true
+        markdown.includes?("[`a1b2c3d`](https://github.com/sol-vin/carbon/commit/a1b2c3d)").should be_true
+      end
+    end
+
+    it "disables hyperlinking when auto_link_github is false" do
+      with_temp_dir do |dir|
+        manifest = Carbon::Changelog::Manifest.new
+        manifest.settings.github_slug = "sol-vin/carbon"
+        manifest.settings.auto_link_github = false
+
+        entry = Carbon::Changelog::Entry.new(
+          type: "fix",
+          description: "fix issue #42 in CLI parser",
+          hash: "a1b2c3d"
+        )
+        release = Carbon::Changelog::Release.new("0.1.0", "2026-10-01", "active", entries: [entry])
+        manifest.releases << release
+
+        markdown = Carbon::Changelog::Manager.compile(manifest, dir)
+        markdown.includes?("([`a1b2c3d`]").should be_false
+        markdown.includes?("(`a1b2c3d`)").should be_true
+        markdown.includes?("fix issue #42 in CLI parser").should be_true
+      end
+    end
   end
 end

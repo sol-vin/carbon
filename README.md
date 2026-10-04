@@ -3,7 +3,7 @@
 <!-- carbon:badges -->
 [![CI](https://github.com/sol-vin/carbon/actions/workflows/ci.yml/badge.svg)](https://github.com/sol-vin/carbon/actions/workflows/ci.yml)
 [![Crystal](https://img.shields.io/badge/crystal-%3E%3D%201.20.0-black.svg)](https://crystal-lang.org)
-[![Version](https://img.shields.io/badge/version-0.1.13-blue.svg)](https://github.com/sol-vin/carbon/releases)
+[![Version](https://img.shields.io/badge/version-0.1.14-blue.svg)](https://github.com/sol-vin/carbon/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 <!-- /carbon:badges -->
 
@@ -315,16 +315,17 @@ carbon <command> [options]
 
 | Command | Options | Description |
 | :--- | :--- | :--- |
-| `carbon init` | `--no-hook`, `--no-changelog`, `--major=N`, `--minor=N` | Initialize Carbon in the project, install Git hook & changelog |
-| `carbon bump` | `--commit`, `--minor`, `--major`, `--hook`, `--stage` | Bump version (default: next commit count) |
-| `carbon sync` | `--stage` | Align shard.yml & target files with exact Git commit count |
-| `carbon set <major.minor>` | `--stage` | Set major and minor versions (e.g. `carbon set 1.2`) |
-| `carbon get, version` | `-p`, `--porcelain` | Display current project version |
+| `carbon init` | `--no-hook`, `--no-changelog`, `--no-badges`, `--major=N`, `--minor=N` | Initialize Carbon in the project, install Git hooks, changelog & badges |
+| `carbon bump` | `--commit`, `--minor`, `--major`, `--hook`, `--stage`, `--reset-commit` | Bump version (default: upcoming commit count; idempotent for same commit) |
+| `carbon sync` | `--stage`, `--force` | Align shard.yml & target files with Git commit count (preserving monotonic count) |
+| `carbon set <major.minor[.commit]>` | `--stage` | Explicitly set major, minor, and optional commit count (e.g. `carbon set 1.2` or `carbon set 0.1.25`) |
+| `carbon get, version` | `-p`, `--porcelain` | Display current project version (raw string with `-p`) |
 | `carbon check` | *(none)* | Verify whether shard.yml is in sync with Git commits |
-| `carbon changelog` | `--sync`, `--compile`, `--dry-run`, `--from=REF`, `--to=REF` | Manage `changelog.yml` & compile `CHANGELOG.md` |
+| `carbon changelog` | `--sync`, `--compile`, `--dry-run`, `--links`, `--no-links`, `--from=REF`, `--to=REF` | Manage `changelog.yml` & compile `CHANGELOG.md` with GitHub hyperlinking |
+| `carbon badges` | `render`, `check`, `init`, `list`, `--dry-run`, `--inject`, `--file=FILE` | Manage markdown README badges (`<!-- carbon:badges -->`) |
 | `carbon tag, release` | `[version]`, `--latest`, `--no-latest`, `--push`, `-m MSG` | Seal changelog, create release tag, & update floating latest |
 | `carbon doctor` | `--fix` | Audit repository health, version parity, and auto-repair issues |
-| `carbon hook` | `install`, `uninstall`, `status` | Manage Git pre-commit hook non-destructively |
+| `carbon hook` | `install`, `uninstall`, `status`, `--post-merge`, `--pre-commit` | Manage Git pre-commit and post-merge hooks non-destructively |
 | `carbon help` | *(none)* | Display help manual |
 
 ---
@@ -469,10 +470,18 @@ carbon badges list
 
 ---
 
+## Real-World Production Adoption
+
+Carbon is actively adopted and battle-tested across production Crystal projects:
+- **`sol-vin/carbon`**: Self-versioning, automated release tagging, and badge injection on every commit.
+- **`sol-vin/cradare2`**: Production Crystal radare2 pipe and debugger shard maintaining a 1,000+ line `changelog.yml`, Git pre-commit auto-bumping, and multi-component release builds.
+
+---
+
 ## Running Specs
 
 ```bash
-# Run full test specifications (72 passing specs)
+# Run full test specifications (82 passing specs)
 crystal spec --error-trace
 
 # Build CLI binary
