@@ -22,11 +22,19 @@ describe Carbon::Doctor do
     end
   end
 
-  it "detects version parity between shard.yml and Git commit count" do
+  it "detects when shard.yml commit count is behind Git commits and repairs it" do
     with_temp_git_repo do |dir|
-      File.write(dir.join("shard.yml"), "name: app\nversion: 0.1.10\n")
-      # Repo has 0 commits, so 0.1.10 is out of sync
+      File.write(dir.join("shard.yml"), "name: app\nversion: 0.1.0\n")
+      # Create 2 commits in git
+      File.write(dir.join("file1.txt"), "hello")
+      Process.run("git", ["add", "."], chdir: dir.to_s)
+      Process.run("git", ["commit", "-m", "first commit"], chdir: dir.to_s)
 
+      File.write(dir.join("file2.txt"), "world")
+      Process.run("git", ["add", "."], chdir: dir.to_s)
+      Process.run("git", ["commit", "-m", "second commit"], chdir: dir.to_s)
+
+      # shard.yml is at 0.1.0 while git has 2 commits
       doc = Carbon::Doctor.new(dir)
       issues = doc.run
 
@@ -34,7 +42,19 @@ describe Carbon::Doctor do
       ver_issue.should_not be_nil
 
       doc.fix
-      Carbon::FileManager.read_shard_version(dir.join("shard.yml")).should eq(Carbon::Version.new(0, 1, 0))
+      Carbon::FileManager.read_shard_version(dir.join("shard.yml")).should eq(Carbon::Version.new(0, 1, 2))
+    end
+  end
+
+  it "accepts squashed history where shard.yml commit count is ahead of Git commits" do
+    with_temp_git_repo do |dir|
+      File.write(dir.join("shard.yml"), "name: app\nversion: 0.1.25\n")
+      # Repo has 0 commits, but shard.yml preserves 25 commits from squashed history
+      doc = Carbon::Doctor.new(dir)
+      issues = doc.run
+
+      ver_issue = issues.find { |i| i.category == "Version" }
+      ver_issue.should be_nil
     end
   end
 

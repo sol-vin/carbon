@@ -133,6 +133,7 @@ module Carbon
       type = BumpType::Commit
       is_hook = false
       stage = false
+      reset_commit = false
 
       parser = OptionParser.new do |opts|
         opts.banner = "Usage: carbon bump [options]"
@@ -140,12 +141,13 @@ module Carbon
         opts.on("--commit", "Bump commit number (default)") { type = BumpType::Commit }
         opts.on("--minor", "Bump minor version (keeps commit synced)") { type = BumpType::Minor }
         opts.on("--major", "Bump major version (keeps commit synced)") { type = BumpType::Major }
+        opts.on("--reset-commit", "Reset commit count to 0 when bumping minor or major") { reset_commit = true }
         opts.on("--stage", "Stage updated files with git after bumping") { stage = true }
         opts.on("-h", "--help", "Show help") { puts opts; exit 0 }
       end
       parser.parse(args)
 
-      new_ver = Carbon.bump!(type, ".", stage: stage)
+      new_ver = Carbon.bump!(type, ".", stage: stage, reset_commit: reset_commit)
 
       if is_hook
         puts "\e[36m[carbon]\e[0m Auto-bumped version to \e[1m#{new_ver}\e[0m (commit ##{new_ver.commit})"
@@ -156,14 +158,16 @@ module Carbon
 
     private def cmd_sync(args : Array(String))
       stage = false
+      force = false
       parser = OptionParser.new do |opts|
         opts.banner = "Usage: carbon sync [options]"
+        opts.on("--force", "Force reset commit number to exact Git HEAD commits (disables squash retention)") { force = true }
         opts.on("--stage", "Stage updated files with git after syncing") { stage = true }
         opts.on("-h", "--help", "Show help") { puts opts; exit 0 }
       end
       parser.parse(args)
 
-      new_ver = Carbon.sync!(".", stage: stage)
+      new_ver = Carbon.sync!(".", stage: stage, force: force)
       puts "\e[32m✓\e[0m Synchronized project version to \e[1m#{new_ver}\e[0m (matching Git commit count)"
     end
 
@@ -172,7 +176,7 @@ module Carbon
       remaining = [] of String
 
       parser = OptionParser.new do |opts|
-        opts.banner = "Usage: carbon set <major.minor> [options]"
+        opts.banner = "Usage: carbon set <major.minor[.commit]> [options]"
         opts.on("--stage", "Stage updated files after setting version") { stage = true }
         opts.on("-h", "--help", "Show help") { puts opts; exit 0 }
         opts.unknown_args { |raw| remaining = raw }
@@ -180,14 +184,14 @@ module Carbon
       parser.parse(args)
 
       if remaining.empty?
-        STDERR.puts "\e[31m[carbon error]\e[0m Missing version argument. Example: 'carbon set 1.0'"
+        STDERR.puts "\e[31m[carbon error]\e[0m Missing version argument. Example: 'carbon set 1.0' or 'carbon set 0.1.24'"
         exit 1
       end
 
       raw_target = remaining.first
       parts = raw_target.split(".")
       if parts.size < 2
-        STDERR.puts "\e[31m[carbon error]\e[0m Invalid format '#{raw_target}'. Expected '<major>.<minor>' (e.g. 1.2)"
+        STDERR.puts "\e[31m[carbon error]\e[0m Invalid format '#{raw_target}'. Expected '<major>.<minor>' or '<major>.<minor>.<commit>' (e.g. 1.2 or 0.1.24)"
         exit 1
       end
 
@@ -198,7 +202,13 @@ module Carbon
         exit 1
       end
 
-      new_ver = Carbon.set(maj, min, ".", stage: stage)
+      cmt = parts.size >= 3 ? parts[2].to_i? : nil
+      if parts.size >= 3 && cmt.nil?
+        STDERR.puts "\e[31m[carbon error]\e[0m Commit number must be an integer: '#{raw_target}'"
+        exit 1
+      end
+
+      new_ver = Carbon.set(maj, min, commit: cmt, repo_root: ".", stage: stage)
       puts "\e[32m✓\e[0m Updated version to \e[1m#{new_ver}\e[0m (Major: #{maj}, Minor: #{min}, Commits: #{new_ver.commit})"
     end
 

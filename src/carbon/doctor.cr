@@ -91,10 +91,10 @@ module Carbon
       git = VCS::Git.new(@repo_root)
       if git.initialized?
         commit_count = git.commit_count
-        if shard_ver.commit != commit_count
+        if shard_ver.commit < commit_count
           @issues << DoctorIssue.new(
             "Version",
-            "shard.yml commit count (#{shard_ver.commit}) differs from Git HEAD commits (#{commit_count})",
+            "shard.yml commit count (#{shard_ver.commit}) is behind Git HEAD commits (#{commit_count})",
             fixable: true,
             fix_action: -> { Carbon.sync!(@repo_root); nil }
           )

@@ -24,14 +24,16 @@ module Carbon
     end
   end
 
-  # Synchronizes all target files with the exact current Git commit count
-  def self.sync!(repo_root : Path | String = ".", stage : Bool = false) : Version
+  # Synchronizes all target files with the Git commit count (preserving monotonic count unless force: true)
+  def self.sync!(repo_root : Path | String = ".", stage : Bool = false, force : Bool = false) : Version
     root = Path.new(repo_root)
     git = VCS::Git.new(root)
     curr = current(root)
     actual_commits = git.commit_count
 
-    synced = curr.bump_commit(actual_commits)
+    # If force is true, strictly force to git commit count; otherwise preserve monotonic count
+    synced_commits = force ? actual_commits : Math.max(actual_commits, curr.commit)
+    synced = curr.bump_commit(synced_commits)
     updated_files = FileManager.sync_all_targets(synced, root)
 
     # Sync changelog if present
@@ -60,6 +62,7 @@ module Carbon
     type : BumpType = BumpType::Commit,
     repo_root : Path | String = ".",
     stage : Bool = false,
+    reset_commit : Bool = false,
   ) : Version
     root = Path.new(repo_root)
     git = VCS::Git.new(root)
@@ -67,12 +70,13 @@ module Carbon
 
     new_version = case type
                   in .commit?
-                    target_commits = git.initialized? ? git.commit_count + 1 : curr.commit + 1
+                    # Squash-resilient: commit number monotonically increases and never decreases even if Git history was squashed
+                    target_commits = Math.max(git.initialized? ? git.commit_count + 1 : 0, curr.commit + 1)
                     curr.bump_commit(target_commits)
                   in .minor?
-                    curr.bump_minor
+                    curr.bump_minor(reset_commit: reset_commit)
                   in .major?
-                    curr.bump_major
+                    curr.bump_major(reset_commit: reset_commit)
                   end
 
     updated_files = FileManager.sync_all_targets(new_version, root)
@@ -98,10 +102,21 @@ module Carbon
     new_version
   end
 
-  # Sets major and minor version numbers explicitly across all targets
+  # Sets major and minor version numbers explicitly across all targets (legacy signature)
   def self.set(
     major : Int32,
     minor : Int32,
+    repo_root : Path | String,
+    stage : Bool = false,
+  ) : Version
+    set(major, minor, commit: nil, repo_root: repo_root, stage: stage)
+  end
+
+  # Sets major and minor (and optionally commit) version numbers explicitly across all targets
+  def self.set(
+    major : Int32,
+    minor : Int32,
+    commit : Int32? = nil,
     repo_root : Path | String = ".",
     stage : Bool = false,
   ) : Version
@@ -109,8 +124,15 @@ module Carbon
     git = VCS::Git.new(root)
     curr = current(root)
 
-    commits = git.initialized? ? git.commit_count : curr.commit
-    new_version = Version.new(major, minor, commits, curr.prerelease, curr.build_metadata)
+    target_commit = if explicit = commit
+                      explicit
+                    elsif git.initialized?
+                      Math.max(git.commit_count, curr.commit)
+                    else
+                      curr.commit
+                    end
+
+    new_version = Version.new(major, minor, target_commit, curr.prerelease, curr.build_metadata)
 
     updated_files = FileManager.sync_all_targets(new_version, root)
 
@@ -148,7 +170,8 @@ module Carbon
 
     if shard_ver
       diff = shard_ver.commit - git_commits
-      synced = diff == 0
+      # Synced if matches or monotonically ahead due to squashed history
+      synced = diff >= 0
       {synced: synced, shard_version: shard_ver, git_commits: git_commits, diff: diff}
     else
       {synced: false, shard_version: nil, git_commits: git_commits, diff: -git_commits}
