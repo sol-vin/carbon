@@ -45,7 +45,7 @@ module Carbon
       # Standardizes hooks in a single repository
       def self.standardize_repo(
         repo_path : Path | String,
-        hooks : Array(HookType) = HookType.standard_hooks
+        hooks : Array(HookType) = HookType.standard_hooks,
       ) : RepoStandardizeReport
         path = Path.new(repo_path)
         name = path.basename
@@ -92,7 +92,7 @@ module Carbon
       # Discovers all Git repositories in a directory and standardizes their hooks
       def self.standardize_all(
         parent_dir : Path | String,
-        hooks : Array(HookType) = HookType.standard_hooks
+        hooks : Array(HookType) = HookType.standard_hooks,
       ) : Array(RepoStandardizeReport)
         p = Path.new(parent_dir)
         reports = [] of RepoStandardizeReport
@@ -115,7 +115,7 @@ module Carbon
       # Audits all Git repositories in a directory without altering files
       def self.audit_all(
         parent_dir : Path | String,
-        hooks : Array(HookType) = HookType.standard_hooks
+        hooks : Array(HookType) = HookType.standard_hooks,
       ) : Array(RepoStandardizeReport)
         p = Path.new(parent_dir)
         reports = [] of RepoStandardizeReport
