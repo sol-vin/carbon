@@ -61,12 +61,21 @@ module Carbon
       return unless git.initialized?
       return if ENV["CI"]? == "true" && !@check_hook_in_ci
 
-      unless HookManager.installed?(@repo_root)
+      unless HookManager.installed?(@repo_root, "pre-commit")
         @issues << DoctorIssue.new(
           "Hooks",
           "Carbon pre-commit hook is not installed in .git/hooks/pre-commit",
           fixable: true,
-          fix_action: -> { HookManager.install(@repo_root); nil }
+          fix_action: -> { HookManager.install(@repo_root, "pre-commit"); nil }
+        )
+      end
+
+      unless HookManager.installed?(@repo_root, "post-merge")
+        @issues << DoctorIssue.new(
+          "Hooks",
+          "Carbon post-merge hook is not installed in .git/hooks/post-merge",
+          fixable: true,
+          fix_action: -> { HookManager.install(@repo_root, "post-merge"); nil }
         )
       end
     end

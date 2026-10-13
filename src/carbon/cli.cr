@@ -118,8 +118,8 @@ module Carbon
 
       if install_hook
         if git.initialized?
-          HookManager.install(".")
-          puts "\e[32m✓\e[0m Installed Git pre-commit hook in \e[36m.git/hooks/pre-commit\e[0m"
+          HookManager.install_standard(".")
+          puts "\e[32m✓\e[0m Installed standard Git hooks (pre-commit & post-merge) in \e[36m.git/hooks/\e[0m"
         else
           puts "\e[33m!\e[0m Git repository not initialized. Run 'git init' then 'carbon hook install'."
         end
@@ -376,42 +376,105 @@ module Carbon
     end
 
     private def cmd_hook(args : Array(String))
-      hook_name = "pre-commit"
+      hook_type : Hooks::HookType? = nil
+      target_all = false
+      target_standard = false
       remaining = [] of String
 
       parser = OptionParser.new do |opts|
-        opts.banner = "Usage: carbon hook [install | uninstall | status] [options]"
-        opts.on("--post-merge", "Target Git post-merge hook instead of pre-commit") { hook_name = "post-merge" }
-        opts.on("--pre-commit", "Target Git pre-commit hook (default)") { hook_name = "pre-commit" }
+        opts.banner = "Usage: carbon hook [install | uninstall | status | standardize] [options]"
+        opts.on("--all", "Target all supported Git hooks") { target_all = true }
+        opts.on("--standard", "Target standard Git hooks (pre-commit & post-merge)") { target_standard = true }
+        opts.on("--post-merge", "Target Git post-merge hook") { hook_type = Hooks::HookType::PostMerge }
+        opts.on("--pre-commit", "Target Git pre-commit hook") { hook_type = Hooks::HookType::PreCommit }
+        opts.on("--post-checkout", "Target Git post-checkout hook") { hook_type = Hooks::HookType::PostCheckout }
+        opts.on("--pre-push", "Target Git pre-push hook") { hook_type = Hooks::HookType::PrePush }
         opts.on("-h", "--help", "Show help") { puts opts; exit 0 }
         opts.unknown_args { |raw| remaining = raw }
       end
       parser.parse(args)
 
       if remaining.empty?
-        STDERR.puts "Usage: carbon hook [install | uninstall | status] [--post-merge]"
+        STDERR.puts "Usage: carbon hook [install | uninstall | status | standardize] [options]"
         exit 1
       end
 
       sub = remaining.first
+      installer = Hooks::HookInstaller.new(".")
+
       case sub
       when "install"
-        HookManager.install(".", hook_name: hook_name)
-        puts "\e[32m✓\e[0m Git #{hook_name} hook installed in .git/hooks/#{hook_name}"
-      when "uninstall", "remove"
-        if HookManager.uninstall(".", hook_name: hook_name)
-          puts "\e[32m✓\e[0m Git #{hook_name} hook uninstalled"
+        if target_all
+          installed = installer.install_all
+          puts "\e[32m✓\e[0m Installed all Git hooks (#{installed.map(&.filename).join(", ")}) in \e[36m.git/hooks/\e[0m"
+        elsif ht = hook_type
+          installer.install(ht)
+          puts "\e[32m✓\e[0m Git #{ht.filename} hook installed in \e[36m.git/hooks/#{ht.filename}\e[0m"
         else
-          puts "No Carbon #{hook_name} hook found to uninstall."
+          installed = installer.install_standard
+          puts "\e[32m✓\e[0m Installed standard Git hooks (#{installed.map(&.filename).join(", ")}) in \e[36m.git/hooks/\e[0m"
+        end
+      when "uninstall", "remove"
+        if target_all
+          removed = installer.uninstall_all
+          puts "\e[32m✓\e[0m Uninstalled all Carbon Git hooks (#{removed.map(&.filename).join(", ")})"
+        elsif ht = hook_type
+          if installer.uninstall(ht)
+            puts "\e[32m✓\e[0m Git #{ht.filename} hook uninstalled"
+          else
+            puts "No Carbon #{ht.filename} hook found to uninstall."
+          end
+        else
+          Hooks::HookType.standard_hooks.each do |st|
+            if installer.uninstall(st)
+              puts "\e[32m✓\e[0m Git #{st.filename} hook uninstalled"
+            end
+          end
         end
       when "status"
-        if HookManager.installed?(".", hook_name: hook_name)
-          puts "\e[32m✓\e[0m Carbon Git #{hook_name} hook is \e[1minstalled and active\e[0m"
-        else
-          puts "\e[33m!\e[0m Carbon Git #{hook_name} hook is \e[1mnot installed\e[0m. Run 'carbon hook install --#{hook_name}'."
+        statuses = if target_all
+                     installer.status_all
+                   elsif ht = hook_type
+                     [installer.status(ht)]
+                   else
+                     installer.status_standard
+                   end
+
+        puts "\e[1mCarbon Git Hooks Status:\e[0m"
+        statuses.each do |st|
+          marker = st.installed? ? "\e[32m✓\e[0m" : "\e[33m!\e[0m"
+          state_str = if st.installed?
+                        st.has_foreign_scripts? ? "\e[32minstalled (chained)\e[0m" : "\e[32minstalled (active)\e[0m"
+                      else
+                        st.exists? ? "\e[33munmanaged (user script)\e[0m" : "\e[31mnot installed\e[0m"
+                      end
+          cmd_note = st.active_command ? " [carbon #{st.active_command}]" : ""
+          puts "  #{marker} \e[1m#{st.hook_type.filename.ljust(15)}\e[0m: #{state_str}#{cmd_note}"
+        end
+      when "standardize"
+        target_dirs = remaining.size > 1 ? remaining[1..-1] : [".."]
+        reports = [] of Hooks::RepoStandardizeReport
+
+        target_dirs.each do |td|
+          p = Path.new(td)
+          if Dir.exists?(p.join(".git")) || File.exists?(p.join(".git"))
+            reports << Hooks::HookStandardizer.standardize_repo(p)
+          elsif Dir.exists?(p)
+            reports.concat(Hooks::HookStandardizer.standardize_all(p))
+          end
+        end
+
+        puts "\e[1mStandardized Carbon Hooks Across Repositories:\e[0m"
+        reports.each do |rep|
+          if rep.is_git_repo?
+            hooks_str = rep.installed_hooks.map(&.filename).join(", ")
+            puts "  \e[32m✓\e[0m \e[1m#{rep.repo_name.ljust(20)}\e[0m: Standardized hooks [#{hooks_str}]"
+          else
+            puts "  \e[33m!\e[0m \e[1m#{rep.repo_name.ljust(20)}\e[0m: Skipped (#{rep.error})"
+          end
         end
       else
-        STDERR.puts "Unknown hook command: '#{sub}'. Choose from: install, uninstall, status"
+        STDERR.puts "Unknown hook command: '#{sub}'. Choose from: install, uninstall, status, standardize"
         exit 1
       end
     end
@@ -548,7 +611,7 @@ module Carbon
         \e[36mbadges\e[0m              Manage README badges (render | check | init | list)
         \e[36mtag, release\e[0m         Seal changelog, create release tag, & update floating latest
         \e[36mdoctor\e[0m               Audit repository health, version parity, and fix issues
-        \e[36mhook\e[0m                 Manage Git pre-commit hook (install | uninstall | status)
+        \e[36mhook\e[0m                 Manage Git hooks (install | uninstall | status | standardize)
         \e[36mhelp\e[0m                 Show this help manual
 
       \e[1mBADGES OPTIONS:\e[0m

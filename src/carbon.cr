@@ -1,6 +1,7 @@
 require "./carbon/version"
 require "./carbon/vcs"
 require "./carbon/file_manager"
+require "./carbon/hooks"
 require "./carbon/hook_manager"
 require "./carbon/changelog"
 require "./carbon/badges"
