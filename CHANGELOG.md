@@ -1,4 +1,29 @@
 # CARBON CHANGELOG
+## [0.1.15] - 2026-10-13
+### ✨ Features & Improvements
+- ✦ **[HOOKS]** standardize automated carbon bump hooks across repositories with Two-Tier DSL and cross-repo standardizer ([`5aa9727`](https://github.com/sol-vin/carbon/commit/5aa9727))
+- ✦ initial commit for carbon version control shard ([`55eff71`](https://github.com/sol-vin/carbon/commit/55eff71))
+- ✦ **[CHANGELOG]** add YAML changelog engine, doctor audit, and release manager ([`6f6f58b`](https://github.com/sol-vin/carbon/commit/6f6f58b))
+- ✦ **[CLI]** accept --sync flag in changelog command ([`37b8438`](https://github.com/sol-vin/carbon/commit/37b8438))
+- ✦ **[BADGES]** add badge management system for READMEs ([`91359e8`](https://github.com/sol-vin/carbon/commit/91359e8))
+- ✦ **[VCS]** squash-resilient monotonic commit numbering, huge commit count support, and explicit carbon set <major.minor[.commit]> ([`16e5d6f`](https://github.com/sol-vin/carbon/commit/16e5d6f))
+- ✦ **[EXPANSION]** add GitHub changelog hyperlinking, post-merge hook support, skill, and docs ([`5aa9727`](https://github.com/sol-vin/carbon/commit/5aa9727))
+
+### 🐛 Bug Fixes
+- ✓ **[GLOB]** normalize search path to POSIX format for cross-platform Windows compatibility ([`c1bf604`](https://github.com/sol-vin/carbon/commit/c1bf604))
+- ✓ **[DOCTOR]** skip pre-commit hook check in CI environments ([`37480c6`](https://github.com/sol-vin/carbon/commit/37480c6))
+- ✓ **[CI]** format cli.cr and allow explicit hook check in Doctor under CI ([`0dba6bc`](https://github.com/sol-vin/carbon/commit/0dba6bc))
+- ✓ **[BUMP]** ensure commit bump is idempotent for upcoming commit to fix smoke test ([`4f7938d`](https://github.com/sol-vin/carbon/commit/4f7938d))
+
+### 📚 Documentation
+- 📖 **[CHANGELOG]** update changelog for 0.1.3 release ([`73ad2e4`](https://github.com/sol-vin/carbon/commit/73ad2e4))
+- 📖 refine documentation to focus purely on Carbon VCS mechanics ([`a525559`](https://github.com/sol-vin/carbon/commit/a525559))
+
+### 🛠️ Chores & Tooling
+- • dynamically assert macro version against shard.yml ([`1e4bc97`](https://github.com/sol-vin/carbon/commit/1e4bc97))
+- • add carbon binary to GITHUB_PATH in workflow ([`7e712ee`](https://github.com/sol-vin/carbon/commit/7e712ee))
+
+---
 ## [0.1.14] - 2026-10-04
 ### ✨ Features & Improvements
 - ✦ initial commit for carbon version control shard ([`55eff71`](https://github.com/sol-vin/carbon/commit/55eff71))

@@ -196,6 +196,13 @@ module Carbon
     end
   end
 
+  # Declarative block DSL for configuring Git hooks adhering to the Two-Tier Codex
+  def self.hooks(repo_root : Path | String = ".", &) : Array(Hooks::HookType)
+    builder = Hooks::Builder.new(repo_root)
+    yield builder
+    builder.apply
+  end
+
   # Declarative compile-time macro to define VERSION constants inside any module or class
   macro version!(path = "shard.yml")
     {% begin %}

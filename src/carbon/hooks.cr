@@ -1,0 +1,6 @@
+require "./hooks/type"
+require "./hooks/template"
+require "./hooks/status"
+require "./hooks/installer"
+require "./hooks/builder"
+require "./hooks/standardizer"
