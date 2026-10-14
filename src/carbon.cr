@@ -7,6 +7,7 @@ require "./carbon/changelog"
 require "./carbon/badges"
 require "./carbon/release_manager"
 require "./carbon/doctor"
+require "./carbon/ci"
 require "./carbon/dsl"
 
 module Carbon

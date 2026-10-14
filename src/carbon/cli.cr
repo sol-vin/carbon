@@ -39,6 +39,8 @@ module Carbon
         cmd_doctor(subargs)
       when "hook"
         cmd_hook(subargs)
+      when "ci"
+        cmd_ci(subargs)
       when "help", "--help", "-h"
         print_help
       else
@@ -590,6 +592,61 @@ module Carbon
           badge_snippet = Badges::Builder.build(b, meta, default_style: manifest.settings.style)
           puts "  #{idx + 1}. \e[36m#{b.type}\e[0m: #{badge_snippet}"
         end
+      end
+    end
+
+    private def cmd_ci(args : Array(String))
+      remaining = [] of String
+      parser = OptionParser.new do |opts|
+        opts.banner = "Usage: carbon ci [audit | standardize | init] [paths...]"
+        opts.on("-h", "--help", "Show help") { puts opts; exit 0 }
+        opts.unknown_args { |raw| remaining = raw }
+      end
+      parser.parse(args)
+
+      action = remaining.first? || "audit"
+      target_dirs = remaining.size > 1 ? remaining[1..-1] : ["."]
+
+      case action
+      when "audit", "status"
+        puts "\e[1mCarbon Crystal CI Workflow Audit:\e[0m"
+        all_compliant = true
+        target_dirs.each do |td|
+          p = Path.new(td)
+          audits = if File.exists?(p.join("shard.yml")) || File.exists?(p.join(".github", "workflows", "ci.yml"))
+                     [CI::WorkflowStandardizer.audit_repo(p)]
+                   else
+                     CI::WorkflowStandardizer.audit_all(p)
+                   end
+
+          audits.each do |a|
+            if a.compliant?
+              puts "  \e[32m✓\e[0m \e[1m#{a.repo_name.ljust(15)}\e[0m: Compliant (concurrency, shard cache, format check, spec gate)"
+            else
+              all_compliant = false
+              puts "  \e[33m!\e[0m \e[1m#{a.repo_name.ljust(15)}\e[0m: Missing [#{a.missing_features.join(", ")}]"
+            end
+          end
+        end
+        exit 1 unless all_compliant
+      when "standardize", "init"
+        puts "\e[1mStandardized Crystal CI Workflows:\e[0m"
+        target_dirs.each do |td|
+          p = Path.new(td)
+          reports = if File.exists?(p.join("shard.yml")) || File.exists?(p.join(".github", "workflows", "ci.yml"))
+                      [CI::WorkflowStandardizer.standardize_repo(p)]
+                    else
+                      CI::WorkflowStandardizer.standardize_all(p)
+                    end
+
+          reports.each do |rep|
+            state_lbl = rep.modified? ? "updated" : "already compliant"
+            puts "  \e[32m✓\e[0m \e[1m#{rep.repo_name.ljust(15)}\e[0m: Standardized (#{state_lbl})"
+          end
+        end
+      else
+        STDERR.puts "Unknown ci command: '#{action}'. Choose from: audit, standardize, init"
+        exit 1
       end
     end
 
