@@ -203,6 +203,13 @@ module Carbon
     builder.apply
   end
 
+  # Declarative block DSL for configuring and standardizing Crystal CI workflows adhering to the Two-Tier Codex
+  def self.ci(repo_root : Path | String = ".", &) : CI::RepoCIStandardizeReport
+    builder = CI::Builder.new(repo_root)
+    yield builder
+    builder.apply
+  end
+
   # Declarative compile-time macro to define VERSION constants inside any module or class
   macro version!(path = "shard.yml")
     {% begin %}
